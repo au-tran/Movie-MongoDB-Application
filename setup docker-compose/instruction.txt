@@ -1,0 +1,21 @@
+1. Cd to your docker-compose script folders
+
+2. Create/start all the docker containers with: 
+   docker-compose up -d
+
+3. Run the scripts with:
+   sh init.sh
+
+4. Connect to one of the mongos and enable sharding/setup shard key with:
+   Docker-compose exec router 01 mongo --port 27017
+
+   While in the mongos you can do:
+   sh.enableSharding("databasename")
+   db.adminCommand({shardCollection:databasename.collectionname, key: { someId: "hashed"})
+
+   You can check your shard status while in mongos with:
+   sh.status()
+
+
+That's it for setting up the sharded cluster!
+
