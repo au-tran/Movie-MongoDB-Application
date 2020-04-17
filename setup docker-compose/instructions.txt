@@ -1,0 +1,73 @@
+First, set up your sharded cluster
+
+1. Cd to docker-compose folder
+
+2. In Terminal, call docker-compose up -d 
+   This will create 14 containers for our sharded cluster ready with mongodb and
+   Port exposes for outside application to access
+
+3. Call scripts with sh init.sh (This take around 25 seconds)
+   If you are on windows and experiencing your input device is not TTY error,
+   Open up init.sh and add a -T flag for every docker-compose exec command
+
+4. Now to access one of our mongos, call docker-compose exec router01 mongo --port 27017
+   Again add a -T flag if you need it 
+
+5. Enable sharding for our database and add shard key for our collections
+   I am naming my database movies and collections movie_data and ratings
+   I will use default _id as shard key for both movie_data and ratings
+
+   sh.enableSharding('movies')
+   sh.shardCollection("movies.movie_data", {_id:1})
+   sh.shardCollection("movies.ratings", {_id:1})
+
+   You can check your shard status with sh.status()
+
+That's it for setting up sharded cluster!
+
+Next let us exit out of that docker container and combine our data files
+
+1. Make sure the modify-data.py file is in the same folder as your .csv files
+
+2. If you don't have pandas or bumpy install them with 
+   pip3 install pandas
+   pip3 install numpy
+
+3. Call python3 modify-data.py
+   This will produces a new file call movies_data.csv which is a combination of
+   movies_metadata.csv, links.csv, keywords.csv, and credits.csv
+
+4. We are using movies_data.csv and ratings.csv for importing into our db
+
+Next we need to copy our new .csv files to our docker container for importing into mongodb!
+
+1. Call docker inspect router-01
+   Grab the IP address of the docker container, mine is 172.18.0.3
+   
+2. Cd into the folder where your data files are located
+   
+3. Src = the folder where your data files is contained
+   Target = folder where you want your files to be stored in docker container 
+
+   Call docker cp src/. router-01:/target
+   For me I am doing docker cp movies/. router-01:/movies to copy folder movies
+   Into another folder movies in docker container router-01
+
+4. Connect to docker container router-01 with docker exec -it router-01 bash
+
+5. Cd into the folder you stored the data files in, for me it is movies folder
+
+6. Call the following command to import .csv file into mongodb
+   mongoimport --host container-ip-address --port 27017 --db=dbname
+   --collection=collectionname --file=movies_data.csv --type csv --headerline 
+
+   For me, I am doing this command to import movie_data.csv into movie_data collection
+   mongoimport --host 172.18.0.3 --port 27017 --db=movies --collection=movie_data
+   --file=movies_data.csv --type csv --headerline
+
+   Also, the following command to import ratings.csv into ratings collection 
+   Mongoimport --host 172.18.0.3 --port 27017 --db=movies --collection=ratings
+   --file=ratings.csv --type csv --headerline
+
+We're done! Now, you can connect to mongos with mongo --port 27017.
+If you are outside of the container, connect with docker exec -it router01 bash and connect to mongos!
