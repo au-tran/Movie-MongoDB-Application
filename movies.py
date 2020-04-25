@@ -94,50 +94,103 @@ def main():
 
 # Find average ratings of a movie given movie title
 def average_rating_by_title():
+    movie_title = input("Enter a movie title: ")
+    cursor =  movie_collection.find({'original_title': {'$regex': '.*' + movie_title + '.*', '$options': 'i'}})
+    movie_id = set()
+    for result in cursor:
+        movie_id.add((result['movieId'], result['original_title']))
+    for id in movie_id:
+        movie_id,title = id
+        print(movie_id, title)
+        cursor = ratings_collection.aggregate([{'$match':{'_id': movie_id}},{'$group': {'_id': "$movieId", 'title': {'$first': title}, 'avg_rating': {'$avg': "$rating"}}}])
+        for result in cursor:
+            print(result)
+        return
     return
 
 # Find the number of movies in a genre
 def number_of_movies_by_genre():
+    cursor = movie_collection.aggregate([{ '$unwind' : "$genres" },{'$group':{'_id': "$genres.name", 'genre':{'$first':"$genres.name"}, 'count': {'$sum': 1}}}])
+    for result in cursor:
+        print(result)
     return
 
 # Find all movies released in a year
 def all_movies_by_year():
+    # db.movie_data.aggregate([{'$project':{'year_rel':{'$split':["$release_date","/"]}}},{'$unwind':"$year_rel"},{'$match' : { 'year_rel' : {'$regex':'/[0-9]{4}/'}}},{'$group':{'_id':{"year":"$year_rel"},'count':{"$sum":1}}}])
+    year = input("Enter the release year: ")
+    cursor = movie_collection.find({"release_date": {'$regex': year +'$'}},{'_id':0,'name':1, 'release_date':1})
+    for result in cursor:
+        print(result)
     return
 
 # Find all movies in a genre
 def find_movies_by_genre():
+    print("Please enter any of the following genres: Horror, Foreign, Music, History, Thriller, Crime, Action, "
+          "Fantasy, Science Fiction, Romance, War, Adventure, Family, Animation, Drama, Documentary, Mystery, Comedy ")
+    genre = input("Enter a genre: ")
+    cursor = movie_collection.find({'genres':{'$elemMatch':{'name':genre}}},{'_id':0,'original_title':1 ,'genres.name':1})
+    for result in cursor:
+        print(result)
     return
 
 # Find all movies given a language
 def find_movies_by_language():
+    language = input("Enter a language: ")
+    cursor = movie_collection.find({'spoken_languages': {'$elemMatch': {'name': language}}}, {'_id': 0, 'original_title': 1, 'spoken_languages.name': 1})
+    for result in cursor:
+        print(result)
     return
 
 # Find the average revenue of movies in a genre
 def find_average_revenue_by_genre():
+    genre = input("Enter a genre: ")
+    cursor = movie_collection.aggregate([{'$unwind': "$genres"}, {'$group': {'_id': "$genres.name", 'genres': {'$first': '$genres.name'}, 'avg_revenue':{'$avg':"$revenue"}}},{'$match': {'_id': genre}}])
+    for result in cursor:
+        print(result)
     return
 
 # Find the top 10 movies with highest budget
 def top_10_movies_by_budget():
+    cursor = movie_collection.find({},{'original_title': 1, 'budget': 1}).sort('budget', -1).limit(10)
+    for result in cursor:
+        print(result)
     return
 
 # Find the top 10 movies by user ratings
 def top_10_movies_by_ratings():
+    cursor = ratings_collection.aggregate([{'$group':{'_id': "$movieId", 'avg_rating': {'$avg': "$rating"}}}, {'$sort':{'avg_rating':-1}},{'$limit':10}])
+    movie_id = set();
+    for result in cursor:
+        movie_id.add(result['_id'])
+    for id in movie_id:
+        movie_collection.find({'movieId': id}, {'original_title': 1, 'release_date': 1, 'runtime': 1})
+        for result in cursor:
+            print(result)
+        return
     return
 
 # Find top 10 movies with highest popularity
 def top_10_movies_by_popularity():
-    cursor = movie_collection.aggregate([{'$group': {'_id': "$movieId", 'movie_title': {'$first': '$original_title'},\
-                'avg_popularity': {'$avg': "$popularity"}}}, {'$sort': {'avg_popularity': -1}}, {'$limit': 10}])
+    cursor = movie_collection.find({},{'original_title':1 ,'popularity':1}).sort('popularity',-1).limit(10)
     for result in cursor:
         print(result)
     return
 
 # Find a movie given the title of the movie
 def find_movie_by_title():
+    title = input("Enter the movie title: ")
+    cursor = movie_collection.find({'original_title': {'$regex': '.*'+title+'.*', '$options': 'i'}}, {'_id': 0, 'genres.name':1, 'original_title': 1,'original_language':1 ,'budget': 1, })
+    for result in cursor:
+        print(result)
     return
 
 # Find all movies given name of a cast member
 def find_movie_by_cast_member():
+    cast_member = input("Enter name of a cast member: ")
+    cursor = movie_collection.find({'cast': {'$elemMatch': {'name':{'$regex': '.*'+cast_member+'.*', '$options': 'i'}}}}, {'_id': 0, 'original_title': 1, 'cast.name': 1})
+    for result in cursor:
+        print(result)
     return
 
 # Insert a new movie into the database
