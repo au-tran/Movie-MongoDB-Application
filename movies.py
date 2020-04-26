@@ -301,8 +301,13 @@ def find_movies_made_by_production_countries():
         print(c)
     return
 
-# Find the most popular movies made by a country
+# Find the most popular movies made by a country, limit 10
 def find_most_popular_movies_by_a_country():
+    production_country = input("Insert name of production country: ")
+    query = {'production_countries.name': {'$regex': '.*' + production_country + '.*', '$options': 'i'}}
+    cursor = movie_collection.find(query, {'original_title': 1, 'popularity': 1, 'production_countries': 1}).sort('popularity',-1).limit(10)
+    for c in cursor:
+        print(c)
     return
 
 # Find all cast members of a movie given the movie title
