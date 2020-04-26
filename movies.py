@@ -74,7 +74,7 @@ def main():
         print("21. Find the top 10 movies by average popularity")
         print("22. Find all cast members given the movie title")
         print("23. Update a user's rating")
-        choice = input("Enter a number from 1-15: ")
+        choice = input("Enter a number from 1-23: ")
         if int(choice) > 23 or int(choice) < 1:
             print("Invalid input, please choose a valid choice")
         else:
@@ -227,8 +227,8 @@ def add_rating_by_title():
     rating = input("Insert your rating for the movie (1-5): ")
     query = {'original_title': movie_title}
     movie_id = movie_collection.find(query)[0]['movieId']
-    print('Movie ID: ' + movieId)
-    insert_query = {'userId' : user, 'movieId': movie_id, 'rating': 3.5, 'timestamp': datetime.datetime.now()}
+    print('Movie ID: ' + str(movie_id))
+    insert_query = {'userId' : user, 'movieId': movie_id, 'rating': rating, 'timestamp': datetime.datetime.now()}
 
     inserted_rating_id = ratings_collection.insert_one(insert_query).inserted_id
 
@@ -241,6 +241,11 @@ def add_rating_by_title():
 
 # Update movie data given a movie title
 def update_movie_by_title():
+    movie_title = input("Insert the movie title: ")
+    overview = input("Insert the new description: ")
+    update_query = {'original_title': movie_title}
+    set_query = {"$set": {"overview": overview}}
+    movie_collection.update_one(update_query, set_query)
     return
 
 # Delete a movie from database given a title
@@ -252,22 +257,48 @@ def delete_movie_by_title():
 
 # Delete a rating given userId and movieId
 def delete_rating_by_userid_and_movieid():
+    user = input("Insert your username: ")
+    movie_title = input("Insert the title of the movie: ")
+    query = {'original_title': movie_title}
+    movie_id = movie_collection.find(query)[0]['movieId']
+    print('Movie ID: ' + str(movie_id))
+    delete_query = {'userId': user, 'movieId':movie_id}
+    ratings_collection.delete_one(delete_query)
     return
 
 # Find the number of cast members in a movie
 def number_of_cast_in_a_movie():
+    movie_title = input("Insert the title of the movie: ")
+    query = {'original_title': movie_title}
+    cursor = movie_collection.find(query)
+    for c in cursor:
+        print("Number of cast members: " + str(len(c['cast'])))
     return
 
 # Find the average budget by genre
 def average_budget_by_genre():
+    genre = input("Enter a genre: ")
+    cursor = movie_collection.aggregate([{'$unwind': "$genres"}, {'$group': {'_id': "$genres.name", 'genres': {'$first': '$genres.name'}, 'avg_budget':{'$avg':"$budget"}}},{'$match': {'_id': genre}}])
+    for result in cursor:
+        print(result)
     return
 
 # Find the movies made by a production company
 def find_movies_made_by_production_company():
+    production_company = input("Insert name of production company: ")
+    query = {'production_companies.name': {'$regex': '.*' + production_company + '.*', '$options': 'i'}}
+    cursor = movie_collection.find(query, {'original_title': 1})
+    for c in cursor:
+        print(c)
     return
 
 # Find the movies made by a production country
 def find_movies_made_by_production_countries():
+    production_country = input("Insert name of production country: ")
+    query = {'production_countries.name': {'$regex': '.*' + production_country + '.*', '$options': 'i'}}
+    cursor = movie_collection.find(query, {'original_title': 1})
+    for c in cursor:
+        print(c)
     return
 
 # Find the most popular movies made by a country
@@ -276,6 +307,11 @@ def find_most_popular_movies_by_a_country():
 
 # Find all cast members of a movie given the movie title
 def find_cast_members_by_title():
+    movie_title = input("Insert the movie title: ")
+    query = {'original_title': movie_title}
+    cursor = movie_collection.find(query, {'original_title': 1, 'cast': 1})
+    for c in cursor:
+        print(c)
     return
 
 def update_user_rating():
